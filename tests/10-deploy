@@ -1,0 +1,150 @@
+#!/usr/bin/python
+
+import amulet
+import requests
+import unittest
+import time
+
+
+from charmhelpers.contrib.openstack.amulet.deployment import (
+    OpenStackAmuletDeployment
+)
+
+# This file needs de-linted.  The (mis)use of n-o q-a below causes all lint
+# to go undetected.  Remove that & fixme.
+from charmhelpers.contrib.openstack.amulet.utils import (
+    OpenStackAmuletUtils,
+    DEBUG,
+)
+
+# Use DEBUG to turn on debug logging
+u = OpenStackAmuletUtils(DEBUG)
+
+# XXX Tests inspecting relation data from the perspective of the
+# neutron-openvswitch are missing because amulet sentries aren't created for
+# subordinates Bug#1421388
+
+
+class NeutronOVSBasicDeployment(OpenStackAmuletDeployment):
+    """Amulet tests on a basic neutron-openvswtich deployment."""
+
+    def __init__(self, series, openstack=None, source=None, stable=False):
+        """Deploy the entire test environment."""
+        super(NeutronOVSBasicDeployment, self).__init__(series, openstack,
+                                                        source, stable)
+        self._add_services()
+        self._add_relations()
+        self._configure_services()
+        self._deploy()
+
+        u.log.info('Waiting on extended status checks...')
+        self.exclude_services = ['charm-avi-openstack-neutron']
+        self._wait_and_check(exclude_services=self.exclude_services)
+        self._initialize_tests()
+
+    def _add_services(self):
+        """Add services
+           Add the services that we're testing, where neutron-openvswitch is
+           local, and the rest of the service are from lp branches that are
+           compatible with the local charm (e.g. stable or next).
+           """
+        # Services and relations which are present merely to satisfy
+        # required_interfaces and workload status are not inspected.
+        # Fix me. Inspect those too.
+        this_service = {'name': 'charm-avi-openstack-neutron'}
+        other_services = [
+            {'name': 'nova-compute'},
+            {'name': 'rabbitmq-server'},
+            {'name': 'keystone'},
+            {'name': 'glance'},
+            {'name': 'neutron-api'},
+            {'name': 'percona-cluster', 'constraints': {'mem': '3072M'}},
+        ]
+        super(NeutronOVSBasicDeployment, self)._add_services(this_service,
+                                                             other_services)
+
+    def _add_relations(self):
+        """Add all of the relations for the services."""
+        relations = {
+            'charm-avi-openstack-neutron:neutron-plugin-api':
+            'neutron-api:neutron-plugin-api',
+            # Satisfy workload stat:
+            'neutron-api:identity-service': 'keystone:identity-service',
+            'neutron-api:shared-db': 'percona-cluster:shared-db',
+            'neutron-api:amqp': 'rabbitmq-server:amqp',
+            'nova-compute:amqp': 'rabbitmq-server:amqp',
+            'nova-compute:image-service': 'glance:image-service',
+            'glance:identity-service': 'keystone:identity-service',
+            'glance:shared-db': 'percona-cluster:shared-db',
+            'glance:amqp': 'rabbitmq-server:amqp',
+            'keystone:shared-db': 'percona-cluster:shared-db',
+        }
+        super(NeutronOVSBasicDeployment, self)._add_relations(relations)
+
+    def _configure_services(self):
+        """Configure all of the services."""
+        avi_openstack_neutron_config = {
+            'avi-controller-ip': '1.1.1.1',
+            'avi-controller-password': 'P@ssw0rd123',
+        }
+
+        pxc_config = {
+            'dataset-size': '25%',
+            'max-connections': 1000,
+            'root-password': 'ChangeMe123',
+            'sst-password': 'ChangeMe123',
+        }
+        configs = {
+            'charm-avi-openstack-neutron': avi_openstack_neutron_config,
+            'percona-cluster': pxc_config,
+        }
+        super(NeutronOVSBasicDeployment, self)._configure_services(configs)
+
+    def _wait_and_check(self, sleep=5, exclude_services=[]):
+        """Extended wait and check helper
+        The tests for neutron-openvswitch are particularly sensitive to
+        timing races. This is partially due to the configuration changes being
+        set against neutron-api and needing to wait for the relation to update
+        neutron-openvswitch.
+        This helper will attempt to mitigate these race conditions. It is
+        purposefully redundant to attempt to handle the races.
+        This should be called after every self.d.configure() call.
+        :param sleep: Integer sleep value
+        :param excluded_services: List of excluded services not to be checked
+        """
+        u.log.debug('Extended wait and check ...')
+        time.sleep(sleep)
+        self.d.sentry.wait(timeout=900)
+        time.sleep(sleep)
+        self._auto_wait_for_status(exclude_services=exclude_services)
+        time.sleep(sleep)
+        self.d.sentry.wait()
+        u.log.debug('Wait and check completed.')
+
+    def _initialize_tests(self):
+        """Perform final initialization before tests get run."""
+        # Access the sentries for inspecting service units
+        self.compute_sentry = self.d.sentry['nova-compute'][0]
+        self.rabbitmq_sentry = self.d.sentry['rabbitmq-server'][0]
+        self.neutron_api_sentry = self.d.sentry['neutron-api'][0]
+        self.n_ovs_sentry = self.d.sentry['charm-avi-openstack-neutron'][0]
+
+    def test_avi_neutron_relation(self):
+        """Verify data in rabbitmq-server/neutron-openvswitch amqp relation"""
+        unit = self.rabbitmq_sentry
+        relation = ['charm-avi-openstack-neutron:neutron-plugin-api',
+                    'neutron-api:neutron-plugin-api']
+        expected = {
+            'avi-controller-ip': u.valid_ip,
+            'avi-controller-password': u.not_null
+        }
+
+        ret = u.validate_relation_data(unit, relation, expected)
+        if ret:
+            message = u.relation_error('rabbitmq amqp', ret)
+            amulet.raise_status(amulet.FAIL, msg=message)
+
+
+        
+# if __name__ == '__main__':
+#     unittest.main()
