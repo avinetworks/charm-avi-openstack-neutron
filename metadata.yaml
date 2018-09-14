@@ -1,0 +1,15 @@
+name: charm-avi-openstack-neutron
+summary: Openstack LBaaS - Avi LBaaS driver
+maintainer: Chaitanya Deshpande <chaitanya.deshpande@avinetworks.com>
+description: |
+  Avi Vantage integrates with OpenStack infrastructure components to provide centralized automation, monitoring, and management of application discovery and delivery.
+  Neutron: Avi Controller uses Neutron API to plug service engines into right Neutron networks for receiving and sending the application traffic.
+tags:
+  - openstack
+  - network
+  - misc
+subordinate: true
+requires:
+  neutron-plugin-api-subordinate:
+    interface: neutron-plugin-api-subordinate
+    scope: container
