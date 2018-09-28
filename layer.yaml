@@ -1,2 +1,4 @@
-includes: ['layer:basic']  # if you use any interfaces, add them here
-includes: ['interface:neutron-plugin-api-subordinate']
+includes:
+  - 'layer:basic'
+  - 'interface:neutron-plugin-api-subordinate'
+repo: https://github.com/avinetworks/charm-avi-openstack-neutron.git

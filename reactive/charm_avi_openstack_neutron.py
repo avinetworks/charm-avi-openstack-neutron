@@ -1,4 +1,4 @@
-from charms.reactive import when, when_not, set_flag
+from charms.reactive import when, when_not, set_flag, hook
 from charmhelpers.contrib.python.packages import (
     pip_install
 )
