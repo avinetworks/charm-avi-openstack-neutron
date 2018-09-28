@@ -9,7 +9,12 @@ tags:
   - network
   - misc
 subordinate: true
-requires:
+
+provides:
   neutron-plugin-api-subordinate:
     interface: neutron-plugin-api-subordinate
+    scope: container
+requires:
+  juju-info:
+    interface: juju-info
     scope: container
