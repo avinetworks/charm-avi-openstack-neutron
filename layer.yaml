@@ -1,4 +1,5 @@
 includes:
   - 'layer:basic'
   - 'interface:neutron-plugin-api-subordinate'
+  - 'interface:juju-info'
 repo: https://github.com/avinetworks/charm-avi-openstack-neutron.git
