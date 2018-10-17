@@ -1,0 +1,8 @@
+[service_providers]
+service_provider = LOADBALANCERV2:avi_adc:avi_lbaasv2.avi_driver.AviDriver:default
+
+[avi_adc]
+address = {{avi_controller_ip}}
+user = admin
+password = {{avi_admin_password}}
+cloud = openstack

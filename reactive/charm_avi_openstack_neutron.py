@@ -2,8 +2,14 @@ from charms.reactive import when, when_not, set_flag, hook
 from charmhelpers.contrib.python.packages import (
     pip_install
 )
+from charmhelpers.fetch import (
+    apt_install
+)
 from charmhelpers.core.hookenv import (
     config
+)
+from charmhelpers.core import (
+    templating
 )
 
 
@@ -13,36 +19,25 @@ def install_charm_avi_openstack_neutron():
                 'download/%s/avi-lbaasv2-%s.tar.gz'
                 % (config('avi-controller-version'),
                    config('avi-controller-version')))
+    apt_install('python3-jinja2')
     set_flag('charm-avi-openstack-neutron.installed')
 
 
 @when('neutron-plugin-api-subordinate.connected')
 def configure_principle(api_principle):
-    inject_config = {
-        "neutron-api": {
-            "/etc/neutron/neutron.conf": {
-                "sections": {
-                    'DEFAULT': [
-                        ('service_provider',
-                         'LOADBALANCERV2:avi_adc:avi_lbaasv2.'
-                         'avi_driver.'
-                         'AviDriver:default'),
-                    ],
-                    'avi_adc': [
-                        ('address', config('avi-controller-ip')),
-                        ('user', 'admin'),
-                        ('password', config('avi-controller-password')),
-                        ('cloud', 'openstack'),
-                    ],
-                }
-            }
-        }
+
+    avi_config = {
+        'avi_controller_ip': config('avi-controller-ip'),
+        'avi_admin_password': config('avi-controller-password')
     }
+    templating.render('avi_lbaas.conf.template',
+                      '/etc/neutron/plugins/avi/avi_lbaas.conf',
+                      avi_config,
+                      templates_dir='templates/')
     api_principle.configure_plugin(
         neutron_plugin='odl',
         core_plugin='neutron.plugins.ml2.plugin.Ml2Plugin',
-        neutron_plugin_config='/etc/neutron/plugins/ml2/ml2_conf.ini',
-        service_plugins='router,firewall,lbaas,vpnaas,metering',
-        subordinate_configuration=inject_config)
+        neutron_plugin_config='/etc/neutron/plugins/avi/avi_lbaas.conf',
+        service_plugins='lbaas')
 
     api_principle.request_restart(service_type='neutron')
