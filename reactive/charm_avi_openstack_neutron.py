@@ -37,6 +37,9 @@ def configure_principle(api_principle):
     api_principle.configure_plugin(
         neutron_plugin='avi_lbaas',
         neutron_plugin_config='/etc/neutron/plugins/avi/avi_lbaas.conf',
+        service_plugins=('router,firewall,metering,segments,'
+                         'neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPluginv2,'
+                         'neutron_dynamic_routing.services.bgp.bgp_plugin.BgpPlugin'),
         subordinate_configuration={})
 
     api_principle.request_restart(service_type='neutron')
