@@ -10,7 +10,7 @@ import subprocess
 
 @when_not('charm-avi-openstack-neutron.installed')
 def install_charm_avi_openstack_neutron():
-    subprocess.check_call(['pip3',
+    subprocess.check_call(['/usr/bin/pip3',
                            'install',
                            'https://github.com/avinetworks/openstack-lbaasv2/'
                            'releases/download/%s/avi-lbaasv2-%s.tar.gz'
