@@ -35,9 +35,8 @@ def configure_principle(api_principle):
                       avi_config,
                       templates_dir='templates/')
     api_principle.configure_plugin(
-        neutron_plugin='odl',
-        core_plugin='neutron.plugins.ml2.plugin.Ml2Plugin',
+        neutron_plugin='avi_lbaas',
         neutron_plugin_config='/etc/neutron/plugins/avi/avi_lbaas.conf',
-        service_plugins='lbaas')
+        subordinate_configuration={})
 
     api_principle.request_restart(service_type='neutron')
