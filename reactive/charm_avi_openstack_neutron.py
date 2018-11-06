@@ -12,13 +12,18 @@ from charmhelpers.core import (
     templating
 )
 
+import subprocess
+
 
 @when_not('charm-avi-openstack-neutron.installed')
 def install_charm_avi_openstack_neutron():
-    pip_install('https://github.com/avinetworks/openstack-lbaasv2/releases/'
-                'download/%s/avi-lbaasv2-%s.tar.gz'
-                % (config('avi-controller-version'),
-                   config('avi-controller-version')))
+    subprocess.check_call(['pip3',
+                           'install',
+                           'https://github.com/avinetworks/openstack-lbaasv2/releases/'
+                           'download/%s/avi-lbaasv2-%s.tar.gz'
+                           % (config('avi-controller-version'),
+                           config('avi-controller-version'))
+                           ])
     apt_install('python3-jinja2')
     set_flag('charm-avi-openstack-neutron.installed')
 
