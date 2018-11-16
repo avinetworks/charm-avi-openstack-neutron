@@ -43,4 +43,4 @@ def configure_principle(api_principle):
             'neutron_dynamic_routing.services.bgp.bgp_plugin.BgpPlugin'),
         subordinate_configuration={})
 
-    api_principle.request_restart(service_type='neutron')
+    api_principle.request_restart()
