@@ -23,7 +23,15 @@ def install_charm_avi_openstack_neutron():
 
 
 @when('neutron-plugin-api-subordinate.connected')
+def subordinate_connected(api_principle):
+    configure_principle(api_principle)
+
+
 @when('config.changed')
+def config_changed(api_principle):
+    configure_principle(api_principle)
+
+
 def configure_principle(api_principle):
 
     avi_config = {
