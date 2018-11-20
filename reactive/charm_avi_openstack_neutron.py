@@ -27,6 +27,7 @@ def subordinate_connected(api_principle):
     configure_principle(api_principle)
 
 
+@when('neutron-plugin-api-subordinate.connected')
 @when('config.changed')
 def config_changed(api_principle):
     configure_principle(api_principle)
